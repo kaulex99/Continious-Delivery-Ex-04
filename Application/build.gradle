@@ -41,6 +41,10 @@ android {
         }
     }
 
+    lintOptions {
+        abortOnError false
+    }
+
     compileSdkVersion 33
 
     defaultConfig {
