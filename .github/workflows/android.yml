@@ -20,8 +20,7 @@ jobs:
 
     - name: Prepare Keystore and properties
       run: |
-        echo "${{secrets.ANDROID_KEYSTORE}}" > keystore.asc
-        mkdir Application/keystore
+        echo "${{secrets.ANDROID_KEYSTORE}}" > android-keystore.asc
         gpg -d --passphrase "${{secrets.ANDROID_KEYSTORE_PASSPHRASE}}" --batch android-keystore.asc > android-keystore.jks
         echo "storePassword=${{secrets.ANDROID_KEYSTORE_PASSPHRASE}}" >> gradle.properties
         echo "keyPassword=${{secrets.ANDROID_KEYSTORE_PASSPHRASE}}" >> gradle.properties
