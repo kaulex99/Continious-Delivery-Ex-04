@@ -1,56 +1,67 @@
+# Exercise 4
+## Part 1
+### Generate keystore
+```bash 
+keytool -genkey -v -keystore android-keystore.jks -alias playstore -keyalg RSA -keysize 4096 - validity 10000 -sigalg SHA256withRSA
+```
+### Gradle setup
 
-Android BasicMultitouch Sample
-===================================
+### Build signed APK
 
-Sample demonstrates the use of [MotionEvent][1] properties to keep track of
-individual touches across multiple touch events.
+### Verify signature
+```bash
+jarsigner -verify -verbose -certs Application/build/outputs/apk/releaseApplication-release.apk
+```
+![](img/Picture1.png)
 
-[1]: http://developer.android.com/reference/android/view/MotionEvent.html
+## Part 2/3
+### Workflow
+```yml
+name: Android CI
 
-Introduction
-------------
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
-This is an example of keeping track of individual touches across multiple
-[MotionEvent][1]s.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: gradle
 
-This sample uses a custom View (`TouchDisplayView`) that responds to
-touch events and draws a colored circle for each touch point. The view holds
-data related to a touch pointer, including its current position, pressure,
-and its past touch history.
+    - name: Prepare Keystore and properties
+      run: |
+        echo "${{secrets.ANDROID_KEYSTORE}}" > android-keystore.asc
+        gpg -d --passphrase "${{secrets.ANDROID_KEYSTORE_PASSPHRASE}}" --batch android-keystore.asc > android-keystore.jks
+        echo "storePassword=${{secrets.ANDROID_KEYSTORE_PASSPHRASE}}" >> gradle.properties
+        echo "keyPassword=${{secrets.ANDROID_KEYSTORE_PASSPHRASE}}" >> gradle.properties
 
-The View draws graphics based on data associated with each touch event to a
-canvas. A large circle indicates the current position of a touch, while smaller
-trailing circles represent previous positions for that touch.
-The size of the large circle is scaled depending on the pressure of the user's
-touch.
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Build with Gradle
+      run: ./gradlew Application:assembleRelease
 
-[1]: http://developer.android.com/reference/android/view/MotionEvent.html
+    - name: Check with Jar Signer
+      run: jarsigner -verify -verbose -certs Application/build/outputs/apk/release/Application-release.apk
 
-Pre-requisites
---------------
+    - name: Publish APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: Application-release.apk
+        path: Application/build/outputs/apk/release/Application-release.apk
+```
+### Action
+![](img/Picture2.png)
 
-- Android SDK 28
-- Android Build Tools v28.0.3
-- Android Support Repository
+## Question
+**Wie können zB Tester auf die APK zugreifen, um diese auf das Smartphone zu installieren und die App zu verwenden? Gibt es dazu geeignete GitHub Actions?** 
 
-Screenshots
--------------
-
-<img src="screenshots/intro.png" height="400" alt="Screenshot"/> <img src="screenshots/touches.png" height="400" alt="Screenshot"/> 
-
-Getting Started
----------------
-
-This sample uses the Gradle build system. To build this project, use the
-"gradlew build" command or use "Import Project" in Android Studio.
-
-Support
--------
-
-- Stack Overflow: http://stackoverflow.com/questions/tagged/android
-
-If you've found an error in this sample, please file an issue:
-https://github.com/android/input
-
-Patches are encouraged, and may be submitted by forking this project and
-submitting a pull request through GitHub. Please see CONTRIBUTING.md for more details.
+Man könnte die APK per SSH auf einen restricted Webserver spielen um diese intern den Testern zur Verfügung zu stellen.
