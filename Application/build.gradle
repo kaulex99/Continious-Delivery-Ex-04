@@ -33,7 +33,7 @@ List<String> dirs = [
 
 android {
     signingConfigs {
-        debug {
+        release {
             storeFile file('../android-keystore.jks')
             storePassword findProperty('storePassword')
             keyPassword findProperty('keyPassword')
@@ -41,6 +41,12 @@ android {
         }
     }
 
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
+}
     lintOptions {
         abortOnError false
     }
@@ -68,3 +74,4 @@ android {
         androidTest.java.srcDirs = ['tests/src']
     }
 }
+

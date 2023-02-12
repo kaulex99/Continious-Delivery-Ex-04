@@ -8,9 +8,7 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
     - name: set up JDK 11
@@ -20,7 +18,21 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
+    - name: Prepare Keystore and properties
+      run: |
+        echo "${{secrets.ANDROID_KEYSTORE}}" > keystore.asc
+        mkdir Application/keystore
+        gpg -d --passphrase "${{secrets.ANDROID_KEYSTORE_PASSPHRASE}}" --batch android-keystore.asc > android-keystore.jks
+        echo "storePassword=${{secrets.ANDROID_KEYSTORE_PASSPHRASE}}" >> gradle.properties
+        echo "keyPassword=${{secrets.ANDROID_KEYSTORE_PASSPHRASE}}" >> gradle.properties
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Build with Gradle
-      run: ./gradlew build
+      run: ./gradlew Application:assembleRelease
+
+    - name: Publish APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: Application-release.apk
+        path: Application/build/outputs/apk/release/Application-release.apk
