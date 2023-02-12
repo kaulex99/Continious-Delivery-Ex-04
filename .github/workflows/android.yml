@@ -31,7 +31,7 @@ jobs:
       run: ./gradlew Application:assembleRelease
 
     - name: Check with Jar Signer
-      run: jarsigner -verify -verbose -certs app/build/outputs/apk/release/Application-release.apk
+      run: jarsigner -verify -verbose -certs Application/build/outputs/apk/release/Application-release.apk
 
     - name: Publish APK
       uses: actions/upload-artifact@v3
